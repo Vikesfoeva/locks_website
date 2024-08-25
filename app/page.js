@@ -156,7 +156,7 @@ export default function LocksTable() {
           router.refresh();
         }}
       />
-      {/* Selections Table */}
+
       <Table 
         isStriped 
         aria-label="Locks Choices Table"
@@ -177,10 +177,11 @@ export default function LocksTable() {
       </Table>
 
       {/* Locks Table */}
+      <div>
       <Table 
         isStriped 
+        isHeaderSticky = "true"
         aria-label="Locks Table"
-        isHeaderSticky={true}
         onCellAction={(ele) => {
           checkButtonStatus(router, ele);
         }}
@@ -210,6 +211,7 @@ export default function LocksTable() {
           )}
         </TableBody>
       </Table>
+      </div>
     </main>
   );
 }
