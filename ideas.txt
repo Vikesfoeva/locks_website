@@ -3,3 +3,7 @@ Stiky the header of the choices table
 Buton in the selections table to clear that selection (Confirm w/ user)
 Wrnign to user when they go to pick their 4th
 Email the commish email when someone submits their pick
+
+
+Bug found
+ - Clicking on non valid cells results in a selection

@@ -3,6 +3,8 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell, getKeyValue} from "@nextui-org/table";
 import {Chip} from "@nextui-org/chip";
+import { DeleteIcon } from "@nextui-org/shared-icons";
+import { Tooltip } from "@nextui-org/react";
 
 // https://nextui.org/docs/components/button
 
@@ -13,6 +15,7 @@ const columns_choices = [
   {key: "choice", label: "Choice"},
   {key: "value", label: "Value"},
   {key: "time", label: "Game Time EST"},
+  {key: "button", label: "Actions"}
 ];
 
 const blankRow = {
@@ -99,13 +102,14 @@ export default function LocksTable() {
       const away = rows_options[foundIndexForRow]['name_away'];
       const home = rows_options[foundIndexForRow]['name_home'];
       rows_choices.push({
-        "key": `${away}_${home}_${choice}`,
+        "key": `${away}|${home}|${choice}|`,
         "cfb_nfl": rows_options[foundIndexForRow]['cfb_nfl'],
         "name_away": away,
         "name_home": home,
         "choice": polishChoice[choice],
         "value": 0,
         "time": rows_options[foundIndexForRow]['time'],
+        "button": 123
       });
     }
 
@@ -160,6 +164,10 @@ export default function LocksTable() {
       <Table 
         isStriped 
         aria-label="Locks Choices Table"
+        onCellAction={(ele) => {
+          console.log("Implement delete funciton here")
+          console.log(ele)
+        }}
         >
         <TableHeader>
           {columns_choices.map((column) =>
@@ -169,7 +177,17 @@ export default function LocksTable() {
         <TableBody>
           {rows_choices.map((row) =>
             <TableRow key={row.key}>
-              {(columnKey) => <TableCell>{getKeyValue(row, columnKey)} </TableCell>
+              {(columnKey) => {
+                if (columnKey === "button" && row['cfb_nfl'] !== "TBD"){
+                  return <TableCell>
+                    <Tooltip color="danger" content="Delete selection">
+                    <span className="text-lg text-danger cursor-pointer active:opacity-50"><DeleteIcon /></span>
+                    </Tooltip>
+                    </TableCell>
+                } else {
+                  return <TableCell>{getKeyValue(row, columnKey)} </TableCell>
+                }
+              }
               }
             </TableRow>
           )}
@@ -183,7 +201,10 @@ export default function LocksTable() {
         isHeaderSticky = "true"
         aria-label="Locks Table"
         onCellAction={(ele) => {
-          checkButtonStatus(router, ele);
+          const row = ele.split("|");
+          if (buttonRows.includes(row[6])) {
+            checkButtonStatus(router, ele);
+          }
         }}
         >
         <TableHeader>
@@ -203,7 +224,8 @@ export default function LocksTable() {
                               {getKeyValue(row, columnKey)}
                             </Chip>
                           </TableCell>
-                } else {
+                }
+                else {
                   return <TableCell>{getKeyValue(row, columnKey)} </TableCell>
                 }
               }}
