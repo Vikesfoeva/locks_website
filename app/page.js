@@ -14,7 +14,7 @@ const columns_choices = [
   {key: "name_home", label: "Home Home"},
   {key: "choice", label: "Choice"},
   {key: "value", label: "Value"},
-  {key: "time", label: "Game Time EST"},
+  {key: "time", label: "Game Time ET"},
   {key: "button", label: "Actions"}
 ];
 
@@ -200,6 +200,7 @@ export default function LocksTable() {
         isStriped 
         isHeaderSticky = "true"
         aria-label="Locks Table"
+        overflow
         onCellAction={(ele) => {
           const row = ele.split("|");
           if (buttonRows.includes(row[6])) {
@@ -209,7 +210,11 @@ export default function LocksTable() {
         >
         <TableHeader>
           {columns_options.map((column) =>
-            <TableColumn key={column.key}>{column.label}</TableColumn>
+            <TableColumn 
+              key={column.key}
+              >
+                {column.label}
+            </TableColumn>
           )}
         </TableHeader>
         <TableBody>
@@ -224,6 +229,31 @@ export default function LocksTable() {
                               {getKeyValue(row, columnKey)}
                             </Chip>
                           </TableCell>
+                }
+                else if (columnKey === "time") {
+                  const val = new Date(getKeyValue(row, columnKey));
+                  
+                  const dayLong = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(val);
+                  const dayShort = val.getDate();
+                  const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(val);
+                  let hours = val.getHours();
+                  let modifer = "AM";
+                  if (hours >= 12) {
+                    modifer = "PM"
+                  }
+                  if (hours > 12) {
+                    hours = hours - 12;
+                  } else if (hours === 0) {
+                    hours = 12
+                  }
+                  let minutes = val.getMinutes();
+                  if (minutes < 10) {
+                    minutes = "0" + minutes;
+                  }
+
+                  const gameTime = `${hours}:${minutes} ${modifer}`;
+
+                  return <TableCell>{`${gameTime} ${dayLong}, ${month} ${dayShort}`}</TableCell>
                 }
                 else {
                   return <TableCell>{getKeyValue(row, columnKey)} </TableCell>
