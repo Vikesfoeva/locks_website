@@ -1,23 +1,17 @@
-import {nextui} from '@nextui-org/theme';
-import type { Config } from "tailwindcss";
+// tailwind.config.js
+const {nextui} = require("@nextui-org/theme");
 
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@nextui-org/theme/dist/components/(chip|table|popover|checkbox|spacer).js"
-  ].js"
+    // single component styles
+    "./node_modules/@nextui-org/theme/dist/components/button.js",
+    // or you can use a glob pattern (multiple component styles)
+    './node_modules/@nextui-org/theme/dist/components/(button|snippet|code|input).js'
   ],
   theme: {
-    extend: {
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-      },
-    },
+    extend: {},
   },
+  darkMode: "class",
   plugins: [nextui()],
 };
-export default config;

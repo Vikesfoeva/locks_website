@@ -3,10 +3,17 @@ import React, { useEffect, useState} from 'react'
 import Script from "next/script";
 //import { useRouter } from "next/navigation";
 import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell, getKeyValue} from "@nextui-org/table";
-import {Chip} from "@nextui-org/chip";
+//import Table from '@mui/material/Table';
+//import TableBody from '@mui/material/TableBody';
+//import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+//import TableRow from '@mui/material/TableRow';
+import Chip from '@mui/material/Chip';
 import { DeleteIcon } from "@nextui-org/shared-icons";
 
 function index() {
+  const [gameData, setGameData] = useState([]);
 
   const columns_choices = [
     {key: "cfb_nfl", label: "CFB / NFL"},
@@ -182,46 +189,13 @@ function index() {
     console.log(window.location.href)
     fetch("http://localhost:8080/api/testing")
     .then(res => res.json())
-    .then((data) => {
-      console.log(data)
+    .then((out) => {
+      setGameData(out.data);
+      console.log(out);
     })
   }, [])
-
   return (
     <main>
-    <Script 
-      src="testing.js"
-      onLoad={async ()=>{
-        // const results = await testDataReading();
-        const results: any[] = []
-        for (let i = 0; i < results.length; i++) {
-          const ele = results[i];
-          const homeName = ele['home_team'];
-          const awayName = ele['away_team'];
-          let total = 0;
-          let homeLine = 0;
-          let awayLine = 0;
-          rows_options.push({
-            key: `${homeName}|${awayName}|${i}|`,
-            cfb_nfl: ele['sport_title'],
-            name_away: awayName,
-            line_away: awayLine,
-            name_home: homeName,
-            line_home: homeLine,
-            under: total,
-            over: total,
-            time: ele['commence_time'],
-            selected: {
-              over: false,
-              under: false,
-              line_away: false,
-              line_home: false,
-            } 
-          })
-        }
-      }}
-    />
-
     <Table 
       isStriped 
       aria-label="Locks Choices Table"
@@ -276,50 +250,35 @@ function index() {
         )}
       </TableHeader>
       <TableBody>
-        {rows_options.map((row) =>
-          <TableRow key={row.key}>
-            {(columnKey) => {
-              if (buttonRows.includes(columnKey as string)) {
-                return <TableCell>
-                          <Chip size="md" variant="flat"
-                           // color = {statusColorMap[row.selected[columnKey]]}
-                          >
-                            {getKeyValue(row, columnKey)}
-                          </Chip>
-                        </TableCell>
-              }
-              else if (columnKey === "time") {
-                const val = new Date(getKeyValue(row, columnKey));
-                
-                const dayLong = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(val);
-                const dayShort = val.getDate();
-                const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(val);
-                let hours = val.getHours();
-                let modifer = "AM";
-                if (hours >= 12) {
-                  modifer = "PM"
-                }
-                if (hours > 12) {
-                  hours = hours - 12;
-                } else if (hours === 0) {
-                  hours = 12
-                }
-                const minutesInt: number = val.getMinutes();
-                let minutesStr: string = minutesInt as unknown as string;
-                if (minutesInt < 10) {
-                  minutesStr = "0" + minutesStr;
-                }
-
-                const gameTime = `${hours}:${minutesStr} ${modifer}`;
-
-                return <TableCell>{`${gameTime} ${dayLong}, ${month} ${dayShort}`}</TableCell>
-              }
-              else {
-                return <TableCell>{getKeyValue(row, columnKey)} </TableCell>
-              }
-            }}
-          </TableRow>
-        )}
+          { 
+            gameData.map((game: any) => {
+              return <TableRow key={game['key']}>
+                <TableCell key={`${game['key']}_cfb_nfl`}>{game['cfb_nfl']}</TableCell>
+                <TableCell key={`${game['key']}_name_away`}>{game['name_away']}</TableCell>
+                <TableCell key={`${game['key']}_line_away`}>
+                  <Chip label={game['line_away']} color={
+                      statusColorMap[game["selected"]["line_away"] as string]
+                    }/>
+                </TableCell>
+                <TableCell key={`${game['key']}_name_home`}>{game['name_home']}</TableCell>
+                <TableCell key={`${game['key']}_line_home`}>
+                  <Chip label={game['line_home']}  color={
+                      statusColorMap[game["selected"]["line_home"] as string]
+                    }/>
+                </TableCell>
+                <TableCell key={`${game['key']}_over`}>
+                  <Chip label={game['over']}  color={
+                      statusColorMap[game["selected"]["over"] as string]
+                    }/>
+                </TableCell>
+                <TableCell key={`${game['key']}_under`}>
+                <Chip label={game['under']}  color={
+                      statusColorMap[game["selected"]["under"] as string]
+                    }/>
+                </TableCell>
+                <TableCell key={`${game['key']}_time`}>{game['time']}</TableCell>
+              </TableRow>
+          })}
       </TableBody>
     </Table>
     </div>
