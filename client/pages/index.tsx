@@ -2,13 +2,13 @@
 import React, { useEffect, useState} from 'react'
 import Script from "next/script";
 //import { useRouter } from "next/navigation";
-import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell, getKeyValue} from "@nextui-org/table";
-//import Table from '@mui/material/Table';
-//import TableBody from '@mui/material/TableBody';
-//import TableCell from '@mui/material/TableCell';
+// import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell, getKeyValue} from "@nextui-org/table";
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
-//import TableRow from '@mui/material/TableRow';
+import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
 import { DeleteIcon } from "@nextui-org/shared-icons";
 
@@ -47,7 +47,6 @@ function index() {
 
   fillChoicesTable()
 
-  const buttonRows: string[] = ["line_away", "line_home", "over", "under"]; 
   const statusColorMap = {
     "false": "primary",
     "true": "success", 
@@ -93,22 +92,21 @@ function index() {
     {key: "time", label: "Game Time EST"},
   ];
 
-  function checkButtonStatus(inputRow: string) {
+  function handleMakeSelection(game: object, choice: string) {
     //Ensures that no more than 3 are selected at once
-    const inputArr: string[] = inputRow.split("|");
-    const choice: string = inputArr[6];
-    
     let canBeSelected: boolean = true;
     let foundIndexForRow: number = -1;
     let countActive: number = 0;
+    const updatedGameData: object[] = [];
 
-    for (let i: number = 0; i < rows_options.length; i++) {
+    for (let i: number = 0; i < gameData.length; i++) {
+      updatedGameData.push(gameData[i]);
       const ele: {      
         over: boolean,
         under: boolean,
         line_away: boolean,
         line_home: boolean
-      } = rows_options[i]['selected']
+      } = gameData[i]['selected']
 
       if (ele['over']) {countActive++}
       if (ele['under']) {countActive++}
@@ -119,19 +117,17 @@ function index() {
         canBeSelected = false;
       }
 
-      if (rows_options[i]['name_home'] === inputArr[0] && rows_options[i]['name_away'] === inputArr[1]) {
+      if (gameData[i]['name_home'] === getCastedKey("name_home", game) && gameData[i]['name_away'] === getCastedKey("name_away", game)) {
         foundIndexForRow = i
       }
     }
-
-
 
     const isSelectedBody: {
       over: boolean,
       under: boolean,
       line_away: boolean,
       line_home: boolean,
-    } = rows_options[foundIndexForRow]['selected']
+    } = gameData[foundIndexForRow]['selected']
 
     function getCastedKey(key: string, inputObj: object): boolean|string {
       return inputObj[key as keyof typeof inputObj];
@@ -149,9 +145,10 @@ function index() {
       line_home: "Home Line",
       line_away: "Away Line"
     }
-
+    
     if (isSelected) {
-      setCastedKey(choice, isSelectedBody, false);
+      gameData[foundIndexForRow]["selected"][choice] = false;
+      setGameData(updatedGameData)
       for (let i = 0; i < rows_choices.length; i++) {
         const ele = rows_choices[i];
         const comp = rows_options[foundIndexForRow];
@@ -162,17 +159,18 @@ function index() {
         }
       }
     } else if (canBeSelected) {
-      setCastedKey(choice, isSelectedBody, true);
-      const away = rows_options[foundIndexForRow]['name_away'];
-      const home = rows_options[foundIndexForRow]['name_home'];
+      gameData[foundIndexForRow]["selected"][choice] = true;
+      setGameData(updatedGameData)
+      const away = gameData[foundIndexForRow]['name_away'];
+      const home = gameData[foundIndexForRow]['name_home'];
       rows_choices.push({
         "key": `${away}|${home}|${choice}|`,
-        "cfb_nfl": rows_options[foundIndexForRow]['cfb_nfl'],
+        "cfb_nfl": gameData[foundIndexForRow]['cfb_nfl'],
         "name_away": away,
         "name_home": home,
         "choice": getCastedKey(choice, polishChoice),
         "value": 0,
-        "time": rows_options[foundIndexForRow]['time'],
+        "time": gameData[foundIndexForRow]['time'],
         "button": 123
       });
     }
@@ -196,7 +194,7 @@ function index() {
   }, [])
   return (
     <main>
-    <Table 
+    {/* <Table 
       isStriped 
       aria-label="Locks Choices Table"
       onCellAction={(ele) => {
@@ -225,30 +223,22 @@ function index() {
           </TableRow>
         )}
       </TableBody>
-    </Table>
+    </Table> */}
 
     {/* Locks Table */}
-    <div>
-    <Table 
-      isStriped 
-      aria-label="Locks Table"
-      onCellAction={(ele) => {
-        const eleString =  ele as string;
-        const row: string[] = eleString.split("|");
-        if (buttonRows.includes(row[6])) {
-          checkButtonStatus(eleString);
-        }
-      }}
-      >
-      <TableHeader>
+    <TableContainer>
+    <Table>
+      <TableHead>
+        <TableRow>
         {columns_options.map((column) =>
-          <TableColumn 
+          <TableCell 
             key={column.key}
             >
               {column.label}
-          </TableColumn>
+          </TableCell>
         )}
-      </TableHeader>
+        </TableRow>
+      </TableHead>
       <TableBody>
           { 
             gameData.map((game: any) => {
@@ -256,32 +246,37 @@ function index() {
                 <TableCell key={`${game['key']}_cfb_nfl`}>{game['cfb_nfl']}</TableCell>
                 <TableCell key={`${game['key']}_name_away`}>{game['name_away']}</TableCell>
                 <TableCell key={`${game['key']}_line_away`}>
-                  <Chip label={game['line_away']} color={
-                      statusColorMap[game["selected"]["line_away"] as string]
-                    }/>
+                  <Chip label={game['line_away']} 
+                      color={statusColorMap[game["selected"]["line_away"] as string]}
+                      onClick={() => handleMakeSelection(game, "line_away")}
+                    />
                 </TableCell>
                 <TableCell key={`${game['key']}_name_home`}>{game['name_home']}</TableCell>
                 <TableCell key={`${game['key']}_line_home`}>
-                  <Chip label={game['line_home']}  color={
-                      statusColorMap[game["selected"]["line_home"] as string]
-                    }/>
+                  <Chip label={game['line_home']}  
+                      color={statusColorMap[game["selected"]["line_home"] as string]}
+                      onClick={() => handleMakeSelection(game, "line_home")}
+                    />
                 </TableCell>
                 <TableCell key={`${game['key']}_over`}>
-                  <Chip label={game['over']}  color={
-                      statusColorMap[game["selected"]["over"] as string]
-                    }/>
+                  <Chip label={game['over']} 
+                    color={statusColorMap[game["selected"]["over"] as string]}
+                    onClick={() => handleMakeSelection(game, "over")}
+                    />
                 </TableCell>
                 <TableCell key={`${game['key']}_under`}>
-                <Chip label={game['under']}  color={
-                      statusColorMap[game["selected"]["under"] as string]
-                    }/>
+                <Chip label={game['under']} 
+                    color={statusColorMap[game["selected"]["under"] as string]}
+                    clickable={true}
+                    onClick={() => handleMakeSelection(game, "under")}
+                  />
                 </TableCell>
                 <TableCell key={`${game['key']}_time`}>{game['time']}</TableCell>
               </TableRow>
           })}
       </TableBody>
     </Table>
-    </div>
+    </TableContainer>
   </main>
   )
 }
