@@ -8,9 +8,8 @@ import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import TablePagination from '@mui/material/TablePagination';
-import { CenterFocusStrong, Delete, Padding } from '@mui/icons-material';
+import { Delete} from '@mui/icons-material';
 import Paper from '@mui/material/Paper';
-import styled from 'styled-components';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
@@ -22,7 +21,7 @@ function index() {
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [rowsPerPageOptions, setrowsPerPageOptions] = useState([]);
 
-  const baseURL = "http://localhost:8080/";
+  let baseURL = "";
 
   const constHeightPerRow = 55;
 
@@ -73,14 +72,14 @@ function index() {
   
   const columns_options = [
     {key: "cfb_nfl", label: "CFB / NFL"},
-    {key: "name_away", label: "Away Name"},
     {key: "abbrev_away", label: "Abbrev"},
     {key: "line_away", label: "Away Line"},
-    {key: "name_home",label: "Home Name"},
     {key: "abbrev_home", label: "Abbrev"},
     {key: "line_home", label: "Home Line"},
     {key: "over", label: "Over" },
     {key: "under", label: "Under" },
+    {key: "name_away", label: "Away Name"},
+    {key: "name_home",label: "Home Name"},
     {key: "time", label: "Game Time EST"},
   ];
 
@@ -183,17 +182,22 @@ function index() {
   }
 
   useEffect(() => {
-    if (gameData.length === 0) {
-      fetch(baseURL+ "api/testing")
-      .then(res => res.json())
-      .then((out) => {
-        setGameData(out.data);
-        setChoiceData(fillChoicesTable([]));
-        const cleanRows = Math.floor(window.innerHeight / constHeightPerRow);
-        setRowsPerPage(out.data.length)
-        setrowsPerPageOptions([out.data.length, cleanRows,cleanRows*2, cleanRows*5])
-      });
+    
+    // Check if dev environment
+    const thisURL = window.location.href;
+    if (thisURL.includes("localhost")) {
+      baseURL = "http://localhost:8080/";
     }
+
+    fetch(baseURL+ "api/testing")
+    .then(res => res.json())
+    .then((out) => {
+      setGameData(out.data);
+      setChoiceData(fillChoicesTable([]));
+      const cleanRows = Math.floor(window.innerHeight / constHeightPerRow);
+      setRowsPerPage(out.data.length)
+      setrowsPerPageOptions([out.data.length, cleanRows,cleanRows*2, cleanRows*5])
+    });
   }, [])
   
   return (
@@ -282,7 +286,7 @@ function index() {
       </Container>
     {/* Locks Table */}
     <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-    <TableContainer sx={{ maxHeight: 75/100}}>
+    <TableContainer sx={{ maxHeight: "100vh"}}>
     <Table  stickyHeader aria-label="sticky table" size="small">
       <TableHead>
         <TableRow>
@@ -302,7 +306,7 @@ function index() {
             .map((game: any) => {
               return <TableRow key={game['key']} hover role="checkbox" tabIndex={-1} >
                 <TableCell key={`${game['key']}_cfb_nfl`}>{game['cfb_nfl']}</TableCell>
-                <TableCell key={`${game['key']}_name_away`}>{game['name_away']}</TableCell>
+                
                 <TableCell key={`${game['key']}_abbrev_away`}>{game['abbrev_away']}</TableCell>
                 <TableCell key={`${game['key']}_line_away`}>
                   <Chip label={game['line_away']} 
@@ -312,7 +316,7 @@ function index() {
                       onClick={() => handleMakeSelection(game, "line_away")}
                     />
                 </TableCell>
-                <TableCell key={`${game['key']}_name_home`}>{game['name_home']}</TableCell>
+                
                 <TableCell key={`${game['key']}_abbrev_home`}>{game['abbrev_home']}</TableCell>
                 <TableCell key={`${game['key']}_line_home`}>
                   <Chip label={game['line_home']}  
@@ -338,6 +342,8 @@ function index() {
                     onClick={() => handleMakeSelection(game, "under")}
                   />
                 </TableCell>
+                <TableCell key={`${game['key']}_name_away`}>{game['name_away']}</TableCell>
+                <TableCell key={`${game['key']}_name_home`}>{game['name_home']}</TableCell>
                 <TableCell key={`${game['key']}_time`}>{game['time']}</TableCell>
               </TableRow>
           })}
