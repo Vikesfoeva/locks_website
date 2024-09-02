@@ -180,17 +180,19 @@ function index() {
   }
 
   useEffect(() => {
-    fetch(baseURL+ "api/testing")
-    .then(res => res.json())
-    .then((out) => {
-      setGameData(out.data);
-      setChoiceData(fillChoicesTable([]));
-      
-      const cleanRows = Math.floor(window.innerHeight / constHeightPerRow);
-      setRowsPerPage(out.data.length)
-      setrowsPerPageOptions([out.data.length, cleanRows,cleanRows*2, cleanRows*5])
-    });
+    if (gameData.length === 0) {
+      fetch(baseURL+ "api/testing")
+      .then(res => res.json())
+      .then((out) => {
+        setGameData(out.data);
+        setChoiceData(fillChoicesTable([]));
+        const cleanRows = Math.floor(window.innerHeight / constHeightPerRow);
+        setRowsPerPage(out.data.length)
+        setrowsPerPageOptions([out.data.length, cleanRows,cleanRows*2, cleanRows*5])
+      });
+    }
   }, [])
+  
   return (
     <main>
       <TableContainer sx={{ maxHeight: 20/100}}>
@@ -246,20 +248,38 @@ function index() {
             color="success" 
             size="small"
             onClick={async() => {
-              await fetch(baseURL+ "api/triggerSubmission", {
+
+              const submissions: Object[] = [];
+              for (let i: number = 0; i < choiceData.length; i++) {
+                if (choiceData[i]['cfb_nfl'] !== "TBD") {
+                  submissions.push(choiceData[i]);
+                }
+              }
+
+              if (submissions.length === 0) {
+                window.alert("No selections made");
+                return;
+              }
+;
+              const response = await fetch(baseURL+ "api/triggerSubmission", {
                 method: "POST",
-                body: JSON.stringify({ selections: choiceData}),
+                body: JSON.stringify({ selections: submissions}),
                 headers: {
                   "Content-Type": "application/json",
                 },
               })
+              if (response.status === 204) {
+                window.alert("Submission successful")
+              } else {
+                window.alert("Submission issue")
+              }
             }}
           >Submit Locks</Button>
         </Box>
       </Container>
     {/* Locks Table */}
     <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-    <TableContainer sx={{ maxHeight: 650}}>
+    <TableContainer sx={{ maxHeight: 75/100}}>
     <Table  stickyHeader aria-label="sticky table" size="small">
       <TableHead>
         <TableRow>

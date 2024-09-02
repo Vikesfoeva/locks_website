@@ -5,7 +5,20 @@ const cors = require("cors");
 const path = require('path');
 const fs = require('node:fs');
 
+const {MongoClient, ServerApiVersion} = require("mongodb");
+const data = fs.readFileSync("mongopassword.txt", 'utf8');
+const password = JSON.parse(data)["password"];
+const uri = `mongodb+srv://lenzbMongo:${password}@locksoftheweek.rfsnr.mongodb.net/?retryWrites=true&w=majority&appName=locksOfTheWeek`;
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+
 // npx kill-port 8080
+
 const PORT = process.env.PORT || 8080;
 
 app.use(express.static(path.join(__dirname, '../public')));
@@ -33,7 +46,8 @@ app.post("/api/triggerSubmission", async (req, res) => {
 })
 
 app.get("/api/testing", async (req, res) => {
-    results= await testDataReading();
+    const results= await getSampleDataMongo();
+
     const output = [];
 
     for (let i = 0; i < results.length; i++) {
@@ -91,12 +105,14 @@ function getGameTime(thisTime) {
   return `${gameTime} ${dayLong}, ${month} ${dayShort}`;
 }
 
-async function testDataReading() {
-  const fileName = "8_22_2024 NCAA Data Log.txt"
-  try {
-    const data = fs.readFileSync(fileName, 'utf8');
-    return JSON.parse(data)
-  } catch (err) {
-    console.error(err);
-  }
+async function getSampleDataMongo() {
+  const dbName = "locks_data";
+  const colName = "2024_sample_data";
+
+  const db = client.db(dbName);
+
+  const collection = db.collection(colName);
+  const res = await collection.find().toArray();
+  await client.close();
+  return res[0]['NCAA_data']
 }

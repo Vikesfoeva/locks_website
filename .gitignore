@@ -19,6 +19,9 @@ client/out/
 # production
 client/build
 
+# database
+server/mongopassword.txt
+
 # misc
 .DS_Store
 client/.DS_Store
