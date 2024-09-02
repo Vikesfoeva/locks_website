@@ -1,22 +1,37 @@
-'use client'
 import React, { useEffect, useState} from 'react'
-import Script from "next/script";
-//import { useRouter } from "next/navigation";
-// import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell, getKeyValue} from "@nextui-org/table";
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
+import TableCell, { tableCellClasses }  from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
-import { Delete } from '@mui/icons-material';
-import { Icon } from '@mui/material';
+import TablePagination from '@mui/material/TablePagination';
+import { CenterFocusStrong, Delete, Padding } from '@mui/icons-material';
+import Paper from '@mui/material/Paper';
+import styled from 'styled-components';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
 
 function index() {
   const [gameData, setGameData] = useState([]);
   const [choiceData, setChoiceData] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+  const [rowsPerPageOptions, setrowsPerPageOptions] = useState([]);
+
+  const constHeightPerRow = 55;
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(+event.target.value);
+    setPage(0);
+  };
 
   const columns_choices = [
     {key: "cfb_nfl", label: "CFB / NFL"},
@@ -27,17 +42,6 @@ function index() {
     {key: "time", label: "Game Time ET"},
     {key: "button", label: "Actions"}
   ];
-  
-  const rows_choices: {
-    key: string|null,
-    cfb_nfl: string,
-    name_away: string,
-    name_home: string,
-    choice: string|Boolean,
-    value: Number,
-    time: string,
-    button: any
-  }[] = [];
 
   const statusColorMap = {
     "false": "primary",
@@ -65,25 +69,6 @@ function index() {
     return newChoices;
   }
   
-  const rows_options: {
-    key: string|null,
-    cfb_nfl: string,
-    name_away: string,
-    line_away: number,
-    name_home: string,
-    line_home: number,
-    over: number,
-    under: number,
-    time: string,
-    selected: {
-      over: boolean,
-      under: boolean,
-      line_away: boolean,
-      line_home: boolean,
-    }
-  }[] = [];
-
-
   const columns_options = [
     {key: "cfb_nfl", label: "CFB / NFL"},
     {key: "name_away", label: "Away"},
@@ -193,13 +178,19 @@ function index() {
   useEffect(() => {
     fetch("http://localhost:8080/api/testing")
     .then(res => res.json())
-    .then((out) => {setGameData(out.data);});
-    setChoiceData(fillChoicesTable([]));
+    .then((out) => {
+      setGameData(out.data);
+      setChoiceData(fillChoicesTable([]));
+      
+      const cleanRows = Math.floor(window.innerHeight / constHeightPerRow);
+      setRowsPerPage(out.data.length)
+      setrowsPerPageOptions([out.data.length, cleanRows,cleanRows*2, cleanRows*5])
+    });
   }, [])
   return (
     <main>
-      <TableContainer>
-        <Table >
+      <TableContainer sx={{ maxHeight: 20/100}}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               {columns_choices.map((column) =>
@@ -227,17 +218,24 @@ function index() {
                         <TableCell>{row['choice']}</TableCell>
                         <TableCell>{row['value']}</TableCell>
                         <TableCell>{row['time']}</TableCell>
-                        <TableCell><IconButton color="error" onClick={() => {handleMakeSelection(row, row['choice'], true)}}><Delete /></IconButton></TableCell>
+                        <TableCell><IconButton color="error" size="small" onClick={() => {handleMakeSelection(row, row['choice'], true)}}><Delete /></IconButton></TableCell>
                       </TableRow>
             }
             )}
           </TableBody>
         </Table>
       </TableContainer>
-
+      <Container sx={{padding: 1}}>
+        <Box   display="flex"
+              justifyContent="center"
+              alignItems="center">
+          <Button variant="contained" color="success" size="small">Submit Locks</Button>
+        </Box>
+      </Container>
     {/* Locks Table */}
-    <TableContainer>
-    <Table>
+    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+    <TableContainer sx={{ maxHeight: 650}}>
+    <Table  stickyHeader aria-label="sticky table" size="small">
       <TableHead>
         <TableRow>
         {columns_options.map((column) =>
@@ -251,13 +249,17 @@ function index() {
       </TableHead>
       <TableBody>
           { 
-            gameData.map((game: any) => {
-              return <TableRow key={game['key']}>
+            gameData
+            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+            .map((game: any) => {
+              return <TableRow key={game['key']} hover role="checkbox" tabIndex={-1} >
                 <TableCell key={`${game['key']}_cfb_nfl`}>{game['cfb_nfl']}</TableCell>
                 <TableCell key={`${game['key']}_name_away`}>{game['name_away']}</TableCell>
                 <TableCell key={`${game['key']}_line_away`}>
                   <Chip label={game['line_away']} 
                       color={statusColorMap[game["selected"]["line_away"] as string]}
+                      clickable={true}
+                      size="small"
                       onClick={() => handleMakeSelection(game, "line_away")}
                     />
                 </TableCell>
@@ -265,12 +267,16 @@ function index() {
                 <TableCell key={`${game['key']}_line_home`}>
                   <Chip label={game['line_home']}  
                       color={statusColorMap[game["selected"]["line_home"] as string]}
+                      clickable={true}
+                      size="small"
                       onClick={() => handleMakeSelection(game, "line_home")}
                     />
                 </TableCell>
                 <TableCell key={`${game['key']}_over`}>
                   <Chip label={game['over']} 
                     color={statusColorMap[game["selected"]["over"] as string]}
+                    clickable={true}
+                    size="small"
                     onClick={() => handleMakeSelection(game, "over")}
                     />
                 </TableCell>
@@ -278,6 +284,7 @@ function index() {
                 <Chip label={game['under']} 
                     color={statusColorMap[game["selected"]["under"] as string]}
                     clickable={true}
+                    size="small"
                     onClick={() => handleMakeSelection(game, "under")}
                   />
                 </TableCell>
@@ -287,6 +294,16 @@ function index() {
       </TableBody>
     </Table>
     </TableContainer>
+    <TablePagination
+        rowsPerPageOptions={rowsPerPageOptions}
+        component="div"
+        count={gameData.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+    </Paper>
   </main>
   )
 }
