@@ -23,6 +23,7 @@ app.listen(PORT, () => {
 // https://nextjs.org/docs/pages/building-your-application/configuring/custom-server
 // https://cloud.mongodb.com/v2/6338a25facf4b341141699c2#/clusters/detail/locksOfTheWeek
 // https://leejjon.medium.com/create-a-react-app-served-by-express-js-node-js-and-add-typescript-33705be3ceda
+// https://www.youtube.com/watch?v=5Vxx5UkjV4s
 
 app.get("/api/testing", async (req, res) => {
     results= await testDataReading();
