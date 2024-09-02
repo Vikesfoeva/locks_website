@@ -73,9 +73,11 @@ function index() {
   
   const columns_options = [
     {key: "cfb_nfl", label: "CFB / NFL"},
-    {key: "name_away", label: "Away"},
+    {key: "name_away", label: "Away Name"},
+    {key: "abbrev_away", label: "Abbrev"},
     {key: "line_away", label: "Away Line"},
-    {key: "name_home",label: "Home"},
+    {key: "name_home",label: "Home Name"},
+    {key: "abbrev_home", label: "Abbrev"},
     {key: "line_home", label: "Home Line"},
     {key: "over", label: "Over" },
     {key: "under", label: "Under" },
@@ -162,13 +164,14 @@ function index() {
       gameData[foundIndexForRow]["selected"][objChoice[choice]] = true;
       const away = gameData[foundIndexForRow]['name_away'];
       const home = gameData[foundIndexForRow]['name_home'];
+      
       updatedChoices.push({
         "key": `${away}|${home}|${choice}|`,
         "cfb_nfl": gameData[foundIndexForRow]['cfb_nfl'],
         "name_away": away,
         "name_home": home,
         "choice": polishChoice[choice],
-        "value": 0,
+        "value": gameData[foundIndexForRow][choice],
         "time": gameData[foundIndexForRow]['time'],
       });
     } else {
@@ -300,6 +303,7 @@ function index() {
               return <TableRow key={game['key']} hover role="checkbox" tabIndex={-1} >
                 <TableCell key={`${game['key']}_cfb_nfl`}>{game['cfb_nfl']}</TableCell>
                 <TableCell key={`${game['key']}_name_away`}>{game['name_away']}</TableCell>
+                <TableCell key={`${game['key']}_abbrev_away`}>{game['abbrev_away']}</TableCell>
                 <TableCell key={`${game['key']}_line_away`}>
                   <Chip label={game['line_away']} 
                       color={statusColorMap[game["selected"]["line_away"] as string]}
@@ -309,6 +313,7 @@ function index() {
                     />
                 </TableCell>
                 <TableCell key={`${game['key']}_name_home`}>{game['name_home']}</TableCell>
+                <TableCell key={`${game['key']}_abbrev_home`}>{game['abbrev_home']}</TableCell>
                 <TableCell key={`${game['key']}_line_home`}>
                   <Chip label={game['line_home']}  
                       color={statusColorMap[game["selected"]["line_home"] as string]}

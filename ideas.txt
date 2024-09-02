@@ -3,3 +3,9 @@ Email the commish email when someone submits their pick
 Table Ideas
  - allow sorting
 - Dynamic table sizing
+
+
+Capture API data on initial pull and store it in Mongo
+
+Process this data and store it in Mongo
+ - - Need to pivot to using this data to crate the website UI

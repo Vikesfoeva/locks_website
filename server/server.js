@@ -46,23 +46,46 @@ app.post("/api/triggerSubmission", async (req, res) => {
 })
 
 app.get("/api/testing", async (req, res) => {
+
     const results= await getSampleDataMongo();
+    const lookupTable = JSON.parse(fs.readFileSync("teamLookUpTable.txt", 'utf8'));
 
     const output = [];
+
+    const currentTime = new Date();
+    const cutOffTime = currentTime.setDate(currentTime.getDate() + 7);
 
     for (let i = 0; i < results.length; i++) {
       const ele = results[i];
       const homeName = ele['home_team'];
       const awayName = ele['away_team'];
-      let total = 0;
-      let homeLine = 0;
-      let awayLine = 0;
+      const awayAbbrev = lookupTable[awayName];
+      const homeAbbrev = lookupTable[homeName];
+
+      if (awayAbbrev === undefined || homeAbbrev === undefined) {
+        continue;
+      }
+
+      const thisEle = results[i];
+      const gameTime = new Date(thisEle['commence_time']);
+      if (gameTime > cutOffTime) {
+        continue;
+      }
+
+      const mostCommonOdds = captureTheMode(thisEle['bookmakers'], thisEle['home_team'], thisEle['away_team']);
+
+      let total = mostCommonOdds['totals'];
+      let homeLine = mostCommonOdds['home'];
+      let awayLine = mostCommonOdds['away'];
+
       output.push({
         key: `${homeName}|${awayName}|${i}|`,
         cfb_nfl: ele['sport_title'],
         name_away: awayName,
+        abbrev_away: awayAbbrev,
         line_away: awayLine,
         name_home: homeName,
+        abbrev_home: homeAbbrev,
         line_home: homeLine,
         under: total,
         over: total,
@@ -105,6 +128,74 @@ function getGameTime(thisTime) {
   return `${gameTime} ${dayLong}, ${month} ${dayShort}`;
 }
 
+function captureTheMode(books, home, away) {
+  const totalsTrack = {};
+  const spreadsTrack = {};
+  for (let j=0; j < books.length; j++) {
+    const thisBook = books[j];
+    const markets = thisBook['markets']
+
+    for (let k=0; k < markets.length; k++) {
+      const thisMark = markets[k];
+
+      if (thisMark['key'] === 'spreads') {
+        const thisSpread = thisMark['outcomes'][0];
+        const thisKey = thisSpread['name'] + "|"+ thisSpread['point'];
+
+        if (thisKey in spreadsTrack) {
+          spreadsTrack[thisKey]++;
+        } else {
+          spreadsTrack[thisKey] = 1;
+        }
+
+
+      } else if (thisMark['key'] === 'totals') {
+        const val = thisMark['outcomes'][0]['point'];
+        if (val in totalsTrack) {
+          totalsTrack[val]++;
+        } else {
+          totalsTrack[val] = 1;
+        }
+
+      } else {
+        Logger.log('ERROR');
+      }
+    }
+  }
+  const spreadsMode = maxPair(spreadsTrack).split("|");
+  const totalsMode = maxPair(totalsTrack);
+
+  let homeSpread = spreadsMode[1];
+  let awaySpread = spreadsMode[1]*-1;
+
+  if (spreadsMode[0] !== home) {
+    awaySpread = spreadsMode[1];
+    homeSpread = spreadsMode[1]*-1;
+
+  };
+
+  return {
+    home: homeSpread,
+    away: awaySpread,
+    totals: totalsMode
+  }
+}
+
+function maxPair(dictCheck) {
+  // Consider checking if the mode has 2+ valid values+
+  let maxKey = null;
+  let maxCount = -1;
+
+  for (key in dictCheck) {
+    if (dictCheck[key] > maxCount) {
+      maxKey = key;
+      maxCount = dictCheck[key];
+    }
+  }
+
+  return maxKey;
+}
+
 async function getSampleDataMongo() {
   const dbName = "locks_data";
   const colName = "2024_sample_data";
@@ -113,6 +204,5 @@ async function getSampleDataMongo() {
 
   const collection = db.collection(colName);
   const res = await collection.find().toArray();
-  await client.close();
   return res[0]['NCAA_data']
 }
