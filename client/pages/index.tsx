@@ -10,10 +10,13 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
-import { DeleteIcon } from "@nextui-org/shared-icons";
+import IconButton from '@mui/material/IconButton';
+import { Delete } from '@mui/icons-material';
+import { Icon } from '@mui/material';
 
 function index() {
   const [gameData, setGameData] = useState([]);
+  const [choiceData, setChoiceData] = useState([]);
 
   const columns_choices = [
     {key: "cfb_nfl", label: "CFB / NFL"},
@@ -24,15 +27,6 @@ function index() {
     {key: "time", label: "Game Time ET"},
     {key: "button", label: "Actions"}
   ];
-  
-  const blankRow = {
-    "cfb_nfl": "TBD",
-    "name_away": "",
-    "name_home": "",
-    "choice": "",
-    "value": "",
-    "time": "",
-  }
   
   const rows_choices: {
     key: string|null,
@@ -45,21 +39,30 @@ function index() {
     button: any
   }[] = [];
 
-  fillChoicesTable()
-
   const statusColorMap = {
     "false": "primary",
     "true": "success", 
   }
   
   // Need to update this to update the state of the application
-  function fillChoicesTable() {
-    const needed = 3 - rows_choices.length
-    for (let i = 0; i < needed; i++) {
-      const deepCopy = JSON.parse(JSON.stringify(blankRow));
-      deepCopy["key"] = i;
-      rows_choices.push(deepCopy)
+  function fillChoicesTable(existingRows: Object[]) {
+    const newChoices: Object[] = [];
+    for (let i: number = 0; i < existingRows.length; i++) {
+      newChoices.push(existingRows[i])
     }
+
+    for (let i: number = 0; i < (3 - existingRows.length); i++) {
+      newChoices.push({
+        "key": i,
+        "cfb_nfl": "TBD",
+        "name_away": "",
+        "name_home": "",
+        "choice": "",
+        "value": "",
+        "time": "",
+    })};
+
+    return newChoices;
   }
   
   const rows_options: {
@@ -92,7 +95,7 @@ function index() {
     {key: "time", label: "Game Time EST"},
   ];
 
-  function handleMakeSelection(game: object, choice: string) {
+  function handleMakeSelection(game: object, choice: string, isdeletion: boolean = false) {
     //Ensures that no more than 3 are selected at once
     let canBeSelected: boolean = true;
     let foundIndexForRow: number = -1;
@@ -117,7 +120,7 @@ function index() {
         canBeSelected = false;
       }
 
-      if (gameData[i]['name_home'] === getCastedKey("name_home", game) && gameData[i]['name_away'] === getCastedKey("name_away", game)) {
+      if (gameData[i]['name_home'] === game['name_home'] && gameData[i]['name_away'] === game['name_away']) {
         foundIndexForRow = i
       }
     }
@@ -129,15 +132,7 @@ function index() {
       line_home: boolean,
     } = gameData[foundIndexForRow]['selected']
 
-    function getCastedKey(key: string, inputObj: object): boolean|string {
-      return inputObj[key as keyof typeof inputObj];
-    }
-
-    function setCastedKey(key: string, inputObj: object, newVal: boolean,): undefined {
-      inputObj[key as keyof typeof inputObj];
-    }
-
-    const isSelected: boolean|string = getCastedKey(choice, isSelectedBody);
+    const isSelected: boolean|string = isSelectedBody[choice];
 
     const polishChoice = {
       under: 'Under',
@@ -145,85 +140,100 @@ function index() {
       line_home: "Home Line",
       line_away: "Away Line"
     }
-    
-    if (isSelected) {
-      gameData[foundIndexForRow]["selected"][choice] = false;
-      setGameData(updatedGameData)
-      for (let i = 0; i < rows_choices.length; i++) {
-        const ele = rows_choices[i];
-        const comp = rows_options[foundIndexForRow];
-        if (ele['choice'] === getCastedKey(choice, polishChoice) &&
+    const objChoice = {
+      under: 'under',
+      over: 'over',
+      line_home: "line_home",
+      line_away: "line_away",
+      Under: 'under',
+      Over: 'over',
+      "Home Line": "line_home",
+      "Away Line": "line_away",
+    }
+    const updatedChoices: Object[] = [];
+    for (let i: number = 0; i < choiceData.length; i++) {
+      if (choiceData[i]["cfb_nfl"] !== "TBD") {
+        updatedChoices.push(choiceData[i]);
+      }
+    }
+
+    if (isSelected || isdeletion) {
+      gameData[foundIndexForRow]["selected"][objChoice[choice]] = false;
+      
+      // Remove from choices
+      for (let i = 0; i < updatedChoices.length; i++) {
+        const ele = updatedChoices[i];
+        const comp = gameData[foundIndexForRow];
+        if ((ele['choice'] === polishChoice[choice] || ele['choice'] === choice) &&
           ele['name_away'] === comp['name_away']
         ) {
-          rows_choices.splice(i, 1);
+          updatedChoices.splice(i, 1);
         }
       }
+
     } else if (canBeSelected) {
-      gameData[foundIndexForRow]["selected"][choice] = true;
-      setGameData(updatedGameData)
+      gameData[foundIndexForRow]["selected"][objChoice[choice]] = true;
       const away = gameData[foundIndexForRow]['name_away'];
       const home = gameData[foundIndexForRow]['name_home'];
-      rows_choices.push({
+      updatedChoices.push({
         "key": `${away}|${home}|${choice}|`,
         "cfb_nfl": gameData[foundIndexForRow]['cfb_nfl'],
         "name_away": away,
         "name_home": home,
-        "choice": getCastedKey(choice, polishChoice),
+        "choice": polishChoice[choice],
         "value": 0,
         "time": gameData[foundIndexForRow]['time'],
-        "button": 123
       });
     }
 
-    for (let i = rows_choices.length-1; i >= 0; i--) {
-      if (rows_choices[i]['cfb_nfl'] === "TBD") {
-        rows_choices.splice(i, 1);
-      }
-    }
-    fillChoicesTable();
+    setGameData(updatedGameData)
+    setChoiceData(fillChoicesTable(updatedChoices));
   }
 
   useEffect(() => {
-    console.log(window.location.href)
     fetch("http://localhost:8080/api/testing")
     .then(res => res.json())
-    .then((out) => {
-      setGameData(out.data);
-      console.log(out);
-    })
+    .then((out) => {setGameData(out.data);});
+    setChoiceData(fillChoicesTable([]));
   }, [])
   return (
     <main>
-    {/* <Table 
-      isStriped 
-      aria-label="Locks Choices Table"
-      onCellAction={(ele) => {
-        console.log("Implement delete funciton here")
-        console.log(ele)
-      }}
-      >
-      <TableHeader>
-        {columns_choices.map((column) =>
-          <TableColumn key={column.key}>{column.label}</TableColumn>
-        )}
-      </TableHeader>
-      <TableBody>
-        {rows_choices.map((row) =>
-          <TableRow key={row.key}>
-            {(columnKey) => {
-              if (columnKey === "button" && row['cfb_nfl'] !== "TBD"){
-                return <TableCell>
-                  <span className="text-lg text-danger cursor-pointer active:opacity-50"><DeleteIcon /></span>
-                  </TableCell>
-              } else {
-                return <TableCell>{getKeyValue(row, columnKey)} </TableCell>
+      <TableContainer>
+        <Table >
+          <TableHead>
+            <TableRow>
+              {columns_choices.map((column) =>
+                <TableCell key={column.key}>{column.label}</TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {choiceData.map((row) =>{
+              if (row['cfb_nfl'] === "TBD") {
+                return <TableRow key={row.key}>
+                        <TableCell>{row['cfb_nfl']}</TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
               }
+              return <TableRow key={row.key}>
+                        <TableCell>{row['cfb_nfl']}</TableCell>
+                        <TableCell>{row['name_away']}</TableCell>
+                        <TableCell>{row['name_home']}</TableCell>
+                        <TableCell>{row['choice']}</TableCell>
+                        <TableCell>{row['value']}</TableCell>
+                        <TableCell>{row['time']}</TableCell>
+                        <TableCell><IconButton color="error" onClick={() => {handleMakeSelection(row, row['choice'], true)}}><Delete /></IconButton></TableCell>
+                      </TableRow>
             }
-            }
-          </TableRow>
-        )}
-      </TableBody>
-    </Table> */}
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
     {/* Locks Table */}
     <TableContainer>
