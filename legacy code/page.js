@@ -1,5 +1,6 @@
 'use client'
 import Script from "next/script";
+import React, { useEffect, useState} from 'react'
 import { useRouter } from "next/navigation";
 import {  Table,  TableHeader,  TableBody,  TableColumn,  TableRow,  TableCell, getKeyValue} from "@nextui-org/table";
 import {Chip} from "@nextui-org/chip";
@@ -52,6 +53,7 @@ const columns_options = [
 ];
 
 export default function LocksTable() {
+  
   const router = useRouter();
   function checkButtonStatus(router, inputRow) {
     //Ensures that no more than 3 are selected at once
@@ -126,6 +128,9 @@ export default function LocksTable() {
     "false": "primary",
     "true": "success", 
   }
+  useEffect(() => {
+    fetch("http://localhost:8966/api/testing");
+  })
   return (
       <main>
       <Script 

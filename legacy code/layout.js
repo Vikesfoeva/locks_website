@@ -1,6 +1,8 @@
+"use client"; 
 import {NextUIProvider} from "@nextui-org/react";
 import LocksTable from "./page";
-import './globals.css'
+import Index from ".";
+//import './globals.css'
 
 
 export const metadata = {
@@ -13,7 +15,7 @@ export default function App() {
     <html lang="en">
       <body >
         <NextUIProvider>
-          <LocksTable />
+          <Index />
         </NextUIProvider>
       </body>
     </html>
