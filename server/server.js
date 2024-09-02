@@ -25,6 +25,13 @@ app.listen(PORT, () => {
 // https://leejjon.medium.com/create-a-react-app-served-by-express-js-node-js-and-add-typescript-33705be3ceda
 // https://www.youtube.com/watch?v=5Vxx5UkjV4s
 
+app.post("/api/triggerSubmission", async (req, res) => {
+  const selections = req.body;
+  // Do things with selections
+  res.status(200);
+  res.send({message: "Submission successful"});
+})
+
 app.get("/api/testing", async (req, res) => {
     results= await testDataReading();
     const output = [];
