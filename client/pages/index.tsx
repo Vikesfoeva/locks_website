@@ -22,6 +22,8 @@ function index() {
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [rowsPerPageOptions, setrowsPerPageOptions] = useState([]);
 
+  const baseURL = "http://localhost:8080/";
+
   const constHeightPerRow = 55;
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -169,6 +171,8 @@ function index() {
         "value": 0,
         "time": gameData[foundIndexForRow]['time'],
       });
+    } else {
+      window.alert("Hey now - you can't pick 4 things.")
     }
 
     setGameData(updatedGameData)
@@ -176,7 +180,7 @@ function index() {
   }
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/testing")
+    fetch(baseURL+ "api/testing")
     .then(res => res.json())
     .then((out) => {
       setGameData(out.data);
@@ -218,7 +222,15 @@ function index() {
                         <TableCell>{row['choice']}</TableCell>
                         <TableCell>{row['value']}</TableCell>
                         <TableCell>{row['time']}</TableCell>
-                        <TableCell><IconButton color="error" size="small" onClick={() => {handleMakeSelection(row, row['choice'], true)}}><Delete /></IconButton></TableCell>
+                        <TableCell>
+                          <IconButton 
+                              color="error" 
+                              size="small" 
+                              onClick={() => {
+                                  handleMakeSelection(row, row['choice'], true)
+                                }}>
+                            <Delete /></IconButton>
+                          </TableCell>
                       </TableRow>
             }
             )}
@@ -229,7 +241,20 @@ function index() {
         <Box   display="flex"
               justifyContent="center"
               alignItems="center">
-          <Button variant="contained" color="success" size="small">Submit Locks</Button>
+          <Button 
+            variant="contained" 
+            color="success" 
+            size="small"
+            onClick={async() => {
+              await fetch(baseURL+ "api/triggerSubmission", {
+                method: "POST",
+                body: JSON.stringify({ selections: choiceData}),
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              })
+            }}
+          >Submit Locks</Button>
         </Box>
       </Container>
     {/* Locks Table */}
