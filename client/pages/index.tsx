@@ -13,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
+import Navbar from './navbar';
 
 function index() {
   const [gameData, setGameData] = useState([]);
@@ -188,6 +189,7 @@ function index() {
     if (thisURL.includes("localhost")) {
       baseURL = "http://localhost:8080/";
     }
+    console.log(baseURL)
 
     fetch(baseURL+ "api/testing")
     .then(res => res.json())
@@ -202,6 +204,7 @@ function index() {
   
   return (
     <main>
+      <Navbar />
       <TableContainer sx={{ maxHeight: 20/100}}>
         <Table size="small" stickyHeader>
           <TableHead>
@@ -267,7 +270,10 @@ function index() {
                 window.alert("No selections made");
                 return;
               }
-;
+              const thisURL = window.location.href;
+              if (thisURL.includes("localhost")) {
+                baseURL = "http://localhost:8080/";
+              }
               const response = await fetch(baseURL+ "api/triggerSubmission", {
                 method: "POST",
                 body: JSON.stringify({ selections: submissions}),
@@ -275,7 +281,8 @@ function index() {
                   "Content-Type": "application/json",
                 },
               })
-              if (response.status === 204) {
+              console.log(response.status)
+              if (response.status >= 200 && response.status < 300) {
                 window.alert("Submission successful")
               } else {
                 window.alert("Submission issue")

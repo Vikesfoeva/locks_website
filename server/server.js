@@ -6,8 +6,10 @@ const path = require('path');
 const fs = require('node:fs');
 
 const {MongoClient, ServerApiVersion} = require("mongodb");
-const data = fs.readFileSync("mongopassword.txt", 'utf8');
-const password = JSON.parse(data)["password"];
+
+const data = () => fs.readFileSync(require.resolve("./mongopassword.txt"), { encoding: "utf8" });
+const password = JSON.parse(data())['password']
+
 const uri = `mongodb+srv://lenzbMongo:${password}@locksoftheweek.rfsnr.mongodb.net/?retryWrites=true&w=majority&appName=locksOfTheWeek`;
 const client = new MongoClient(uri, {
   serverApi: {
@@ -40,68 +42,76 @@ app.listen(PORT, () => {
 
 app.post("/api/triggerSubmission", async (req, res) => {
   const selections = req.body;
+  console.log(req.body)
   // Do things with selections
   res.status(200);
   res.send({message: "Submission successful"});
 })
 
+app.get("/", async (req, res) => {
+  res.status(200);
+  res.send({message: "Hello World"});
+})
+
 app.get("/api/testing", async (req, res) => {
 
     const results= await getSampleDataMongo();
-    const lookupTable = JSON.parse(fs.readFileSync("teamLookUpTable.txt", 'utf8'));
 
-    const output = [];
+    const data = () => fs.readFileSync(require.resolve("./teamLookUpTable.txt"), { encoding: "utf8" });
+    const lookupTable = JSON.parse(data())
 
     const currentTime = new Date();
     const cutOffTime = currentTime.setDate(currentTime.getDate() + 7);
 
-    for (let i = 0; i < results.length; i++) {
-      const ele = results[i];
-      const homeName = ele['home_team'];
-      const awayName = ele['away_team'];
-      const awayAbbrev = lookupTable[awayName];
-      const homeAbbrev = lookupTable[homeName];
-
-      if (awayAbbrev === undefined || homeAbbrev === undefined) {
-        continue;
-      }
-
-      const thisEle = results[i];
-      const gameTime = new Date(thisEle['commence_time']);
-      if (gameTime > cutOffTime) {
-        continue;
-      }
-
-      const mostCommonOdds = captureTheMode(thisEle['bookmakers'], thisEle['home_team'], thisEle['away_team']);
-
-      let total = mostCommonOdds['totals'];
-      let homeLine = mostCommonOdds['home'];
-      let awayLine = mostCommonOdds['away'];
-
-      output.push({
-        key: `${homeName}|${awayName}|${i}|`,
-        cfb_nfl: ele['sport_title'],
-        name_away: awayName,
-        abbrev_away: awayAbbrev,
-        line_away: awayLine,
-        name_home: homeName,
-        abbrev_home: homeAbbrev,
-        line_home: homeLine,
-        under: total,
-        over: total,
-        time: getGameTime(ele['commence_time']),
-        selected: {
-          over: false,
-          under: false,
-          line_away: false,
-          line_home: false,
-        } 
-      })
-    }
+    let output = buildClientGameData(results['NFL_data'], [], cutOffTime, lookupTable);
+    output = buildClientGameData(results['NCAA_data'], output, cutOffTime, lookupTable);
 
     res.status(200);
     res.send({data: output});
 });
+
+function buildClientGameData(data, output, cutOffTime, lookupTable) {
+  for (let i = 0; i < data.length; i++) {
+    const ele = data[i];
+    const homeName = ele['home_team'];
+    const awayName = ele['away_team'];
+    const awayAbbrev = lookupTable[awayName];
+    const homeAbbrev = lookupTable[homeName];
+
+    if (awayAbbrev === undefined || homeAbbrev === undefined) {
+      continue;
+    }
+
+    
+    const gameTime = new Date(ele['commence_time']);
+    if (gameTime > cutOffTime) {
+      continue;
+    }
+
+    const mostCommonOdds = captureTheMode(ele['bookmakers'], ele['home_team'], ele['away_team']);
+
+    output.push({
+      key: `${homeName}|${awayName}|${i}|`,
+      cfb_nfl: ele['sport_title'],
+      name_away: awayName,
+      abbrev_away: awayAbbrev,
+      line_away: mostCommonOdds['away'],
+      name_home: homeName,
+      abbrev_home: homeAbbrev,
+      line_home: mostCommonOdds['home'],
+      under: mostCommonOdds['totals'],
+      over: mostCommonOdds['totals'],
+      time: getGameTime(ele['commence_time']),
+      selected: {
+        over: false,
+        under: false,
+        line_away: false,
+        line_home: false,
+      } 
+    })
+  }
+  return output;
+}
 
 function getGameTime(thisTime) {
   const val = new Date(thisTime);
@@ -198,11 +208,11 @@ function maxPair(dictCheck) {
 
 async function getSampleDataMongo() {
   const dbName = "locks_data";
-  const colName = "2024_sample_data";
+  const colName = "week_1";
 
   const db = client.db(dbName);
-
   const collection = db.collection(colName);
   const res = await collection.find().toArray();
-  return res[0]['NCAA_data']
+
+  return res[res.length-1]
 }
